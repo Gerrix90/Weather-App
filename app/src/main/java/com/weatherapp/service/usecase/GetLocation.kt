@@ -1,7 +1,7 @@
 package com.weatherapp.service.usecase
 
 import android.content.Context
-import com.weatherapp.service.Location
+import com.weatherapp.service.model.Location
 import com.weatherapp.service.repository.LocationRepository
 import kotlinx.coroutines.flow.Flow
 

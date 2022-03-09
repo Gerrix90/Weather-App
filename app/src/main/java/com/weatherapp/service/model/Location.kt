@@ -1,4 +1,4 @@
-package com.weatherapp.service
+package com.weatherapp.service.model
 
 data class Location(
     var long : Double,
