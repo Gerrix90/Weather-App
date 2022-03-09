@@ -8,6 +8,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import androidx.lifecycle.viewModelScope
 import com.weatherapp.service.model.Location
+import com.weatherapp.service.model.hourly_weather.Hourly
 import com.weatherapp.service.repository.DataState
 import com.weatherapp.service.usecase.GetHourlyWeather
 import com.weatherapp.service.usecase.GetWeather
@@ -28,6 +29,9 @@ class MainActivityViewModel
 
     private val _flowLocation = MutableStateFlow<Location>(Location(0.0, 0.0))
     val flowLocation = _flowLocation.asStateFlow()
+
+    private val _flowHourlyWeatherList = MutableStateFlow<AnswerState>(AnswerState.Nothing)
+    val flowHourlyWeatherList = _flowHourlyWeatherList.asStateFlow()
 
     fun setEventState(eventState: EventState) {
 
@@ -50,7 +54,7 @@ class MainActivityViewModel
                     ).onEach { datastate ->
                         when (datastate) {
                             is DataState.Success -> {
-                                Log.d("ddd", "setEventState: ${datastate.data.main}")
+                                Log.d("ddd", "setEventState: ${datastate.data}")
                             }
                         }
 
@@ -67,7 +71,8 @@ class MainActivityViewModel
                     ).onEach { datastate ->
                         when (datastate) {
                             is DataState.Success -> {
-                                Log.d("ddd", "setEventState: ${datastate.data.current}")
+                                _flowHourlyWeatherList.value = AnswerState.Success(datastate.data.hourly)
+                                Log.d("ddd", "setEventState: ${datastate.data.hourly}")
                             }
                         }
 
@@ -83,5 +88,11 @@ class MainActivityViewModel
         object GetWeather : EventState()
         object GetHourlyWeather : EventState()
         data class GetLocation(val context: Context) : EventState()
+    }
+
+    sealed class AnswerState{
+        object Nothing : AnswerState()
+        object Error : AnswerState()
+        data class Success(val hourlyList: List<Hourly>) : AnswerState()
     }
 }

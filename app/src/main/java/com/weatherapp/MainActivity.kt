@@ -13,9 +13,11 @@ import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.*
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.weatherapp.ui.MainActivityViewModel
+import com.weatherapp.ui.adapeter.WeatherAdapter
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.flow.Flow
@@ -27,11 +29,13 @@ class MainActivity : AppCompatActivity() {
 
 
     private val viewModel : MainActivityViewModel by viewModels()
+    lateinit var weatherAdapter: WeatherAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         getLocation()
+        setupRecyclerView()
 
         collectLatestLifecycleFlow(viewModel.flowLocation){
             "${getString(R.string.lat)} ${it.lat}".also { latTv.text = it }
@@ -39,6 +43,23 @@ class MainActivity : AppCompatActivity() {
 
         }
 
+        collectLatestLifecycleFlow(viewModel.flowHourlyWeatherList){
+            when(it){
+                is MainActivityViewModel.AnswerState.Success ->{
+                    weatherAdapter.differ.submitList(it.hourlyList)
+                }
+            }
+
+        }
+
+    }
+
+    private fun setupRecyclerView() {
+        weatherAdapter = WeatherAdapter()
+        hourlyWeatherRv.apply {
+            adapter = weatherAdapter
+            layoutManager = LinearLayoutManager(baseContext)
+        }
     }
 
     private fun getLocation(){
