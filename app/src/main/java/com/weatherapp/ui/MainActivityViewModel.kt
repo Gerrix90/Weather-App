@@ -1,6 +1,7 @@
 package com.weatherapp.ui
 
 import android.content.Context
+import android.service.autofill.Dataset
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.weatherapp.service.usecase.GetLocation
@@ -8,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import androidx.lifecycle.viewModelScope
 import com.weatherapp.service.model.Location
+import com.weatherapp.service.model.current_weather.WeatherMain
 import com.weatherapp.service.model.hourly_weather.Hourly
 import com.weatherapp.service.repository.DataState
 import com.weatherapp.service.usecase.GetHourlyWeather
@@ -23,15 +25,12 @@ class MainActivityViewModel
     private val getHourlyWeather: GetHourlyWeather
 ) : ViewModel() {
 
-//    init {
-//        setEventState(EventState.GetWeather)
-//    }
-
     private val _flowLocation = MutableStateFlow<Location>(Location(0.0, 0.0))
     val flowLocation = _flowLocation.asStateFlow()
 
     private val _flowHourlyWeatherList = MutableStateFlow<AnswerState>(AnswerState.Nothing)
     val flowHourlyWeatherList = _flowHourlyWeatherList.asStateFlow()
+
 
     fun setEventState(eventState: EventState) {
 
@@ -40,7 +39,7 @@ class MainActivityViewModel
                 viewModelScope.launch {
                     getLocation(eventState.context).onEach { location ->
                         _flowLocation.value = location
-                        setEventState(EventState.GetWeather)
+//                        setEventState(EventState.GetWeather)
                         setEventState(EventState.GetHourlyWeather)
                     }.launchIn(viewModelScope)
                 }
@@ -54,7 +53,8 @@ class MainActivityViewModel
                     ).onEach { datastate ->
                         when (datastate) {
                             is DataState.Success -> {
-                                Log.d("ddd", "setEventState: ${datastate.data}")
+
+
                             }
                         }
 
@@ -71,8 +71,8 @@ class MainActivityViewModel
                     ).onEach { datastate ->
                         when (datastate) {
                             is DataState.Success -> {
-                                _flowHourlyWeatherList.value = AnswerState.Success(datastate.data.hourly)
-                                Log.d("ddd", "setEventState: ${datastate.data.hourly}")
+                                _flowHourlyWeatherList.value =
+                                    AnswerState.Success(datastate.data.hourly)
                             }
                         }
 
@@ -90,9 +90,12 @@ class MainActivityViewModel
         data class GetLocation(val context: Context) : EventState()
     }
 
-    sealed class AnswerState{
+    sealed class AnswerState {
         object Nothing : AnswerState()
         object Error : AnswerState()
         data class Success(val hourlyList: List<Hourly>) : AnswerState()
+
     }
+
+
 }

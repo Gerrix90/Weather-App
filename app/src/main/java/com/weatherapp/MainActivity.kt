@@ -16,6 +16,7 @@ import androidx.lifecycle.*
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.weatherapp.service.model.hourly_weather.Hourly
 import com.weatherapp.ui.MainActivityViewModel
 import com.weatherapp.ui.adapeter.WeatherAdapter
 import dagger.hilt.android.AndroidEntryPoint
@@ -28,7 +29,7 @@ import kotlinx.coroutines.flow.collectLatest
 class MainActivity : AppCompatActivity() {
 
 
-    private val viewModel : MainActivityViewModel by viewModels()
+    private val viewModel: MainActivityViewModel by viewModels()
     lateinit var weatherAdapter: WeatherAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,16 +38,24 @@ class MainActivity : AppCompatActivity() {
         getLocation()
         setupRecyclerView()
 
-        collectLatestLifecycleFlow(viewModel.flowLocation){
+        collectLatestLifecycleFlow(viewModel.flowLocation) {
             "${getString(R.string.lat)} ${it.lat}".also { latTv.text = it }
             "${getString(R.string.lon)} ${it.long}".also { lonTv.text = it }
 
         }
 
-        collectLatestLifecycleFlow(viewModel.flowHourlyWeatherList){
-            when(it){
-                is MainActivityViewModel.AnswerState.Success ->{
+        collectLatestLifecycleFlow(viewModel.flowHourlyWeatherList) {
+            when (it) {
+                is MainActivityViewModel.AnswerState.Success -> {
                     weatherAdapter.differ.submitList(it.hourlyList)
+
+                    var listForLooping = it.hourlyList.toMutableList()
+                    val filteredList = listForLooping.filter {
+                        it.weather[0].description == "clear sky" &&
+                                it.temp - 273.15 < 30 &&
+                                it.humidity > 30 &&
+                                it.humidity < 90
+                    }
                 }
             }
 
@@ -62,26 +71,33 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun getLocation(){
+    private fun getLocation() {
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
+            != PackageManager.PERMISSION_GRANTED
+        ) {
             ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                    PERMISSION_REQUEST_ACCESS_FINE_LOCATION)
+                this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                PERMISSION_REQUEST_ACCESS_FINE_LOCATION
+            )
             return
         }
 
         viewModel.setEventState(MainActivityViewModel.EventState.GetLocation(baseContext))
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERMISSION_REQUEST_ACCESS_FINE_LOCATION) {
             when (grantResults[0]) {
                 PackageManager.PERMISSION_GRANTED -> getLocation()
-                PackageManager.PERMISSION_DENIED -> {}//Tell to user the need of grant permission
+                PackageManager.PERMISSION_DENIED -> {
+                }//Tell to user the need of grant permission
             }
         }
     }
@@ -91,9 +107,9 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-fun <T> AppCompatActivity.collectLatestLifecycleFlow(flow : Flow<T>, collect: suspend (T) -> Unit){
+fun <T> AppCompatActivity.collectLatestLifecycleFlow(flow: Flow<T>, collect: suspend (T) -> Unit) {
     lifecycleScope.launch {
-        repeatOnLifecycle(Lifecycle.State.STARTED){
+        repeatOnLifecycle(Lifecycle.State.STARTED) {
             flow.collectLatest(collect)
 
         }
